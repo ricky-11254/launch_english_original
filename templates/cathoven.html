@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}TOEIC Writing Test{% endblock %}
+
+{% block content %}
+
+<h1>Cathoven Dashboard for Educators</h1>
+
+<section class="instructions">
+    <div class="question">
+        <h3>Cathoven CEFR API</h3>
+        <form id="form1" action="/cathoven" method="post" class="input">
+            <label for="response1">Enter your text:</label>
+            <textarea id="response1" name="text" rows="10" cols="50"></textarea>
+            <button id="submitBtn" type="submit" data-text="Loading...">Submit</button>
+        </form>
+        <div id="feedback1" class="feedback"></div>
+    </div>
+
+    <section class="navigation">
+        <button onclick="window.location.href='/toeic_speaking'">Go to TOEIC Speaking Test</button>
+    </section>
+</section>
+<script>
+document.querySelectorAll('form').forEach(form => {
+    form.addEventListener('submit', async function (event) {
+        event.preventDefault();
+
+        const submitButton = form.querySelector('button[type="submit"]');
+        const formElements = form.querySelectorAll('textarea, button');
+        document.body.classList.add('loading-cursor');
+        formElements.forEach(element => element.disabled = true);
+        submitButton.textContent = 'Loading...';
+        submitButton.classList.add('loading');
+
+        const textarea = form.querySelector('textarea').value;
+
+        try {
+            const response = await fetch(form.action, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text: textarea })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error: ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log('Full response from server:', result);  // Log the full result
+
+            const feedbackDiv = form.nextElementSibling;
+
+            // Check for existence of answer and its properties
+            if (result.answer && result.answer.final_levels && result.answer.final_levels_str && result.answer.exam_stats) {
+                feedbackDiv.innerHTML = `
+                    <h3>General Levels:</h3>
+                    <ul>
+                        <li>General Level: ${result.answer.final_levels.general_level} (${result.answer.final_levels_str.general_level})</li>
+                        <li>Vocabulary Level: ${result.answer.final_levels.vocabulary_level} (${result.answer.final_levels_str.vocabulary_level})</li>
+                        <li>Tense Level: ${result.answer.final_levels.tense_level} (${result.answer.final_levels_str.tense_level})</li>
+                        <li>Clause Level: ${result.answer.final_levels.clause_level} (${result.answer.final_levels_str.clause_level})</li>
+                        <li>Sentence Level: ${result.answer.final_levels.sentence_level} (${result.answer.final_levels_str.sentence_level})</li>
+                    </ul>
+
+                    <h3>Exam Stats:</h3>
+                    <ul>
+                        <li>ACTFL: ${result.answer.exam_stats.actfl}</li>
+                        <li>Cambridge Scale Score: ${result.answer.exam_stats.cambridge_scale_score}</li>
+                        <li>IELTS: ${result.answer.exam_stats.ielts}</li>
+                        <li>Exam Grades: ${result.answer.exam_stats.exam_grades.join(", ")}</li>
+                    </ul>
+
+                    <h3>Allowed Remaining:</h3>
+                    <ul>
+                        <li>Remaining Coins: ${result.answer.allowed_remaining.remaining_coins}</li>
+                        <li>Max Coins: ${result.answer.allowed_remaining.max_coins}</li>
+                        <li>Next Refill (seconds): ${result.answer.allowed_remaining.next_refill}</li>
+                    </ul>
+                `;
+            } else {
+                console.log('Missing expected data fields. Here is what we got:', result);
+
+                feedbackDiv.innerHTML = `<p>Error: Incomplete data received from the server. Please check the server response.</p>`;
+            }
+        } catch (error) {
+            const feedbackDiv = form.nextElementSibling;
+            feedbackDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+        } finally {
+            formElements.forEach(element => element.disabled = false);
+            submitButton.textContent = 'Submit';
+            submitButton.classList.remove('loading');
+            document.body.classList.remove('loading-cursor');
+        }
+    });
+});
+
+</script>
+
+{% endblock %}
+

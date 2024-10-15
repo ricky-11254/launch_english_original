@@ -1,0 +1,6 @@
+whisper,
+fastapi,
+pydantic,
+uvicorn,
+httpx,
+pyngrok

@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}TOEIC Speaking Test{% endblock %}
+
+{% block content %}
+
+<h1>TOEIC Speaking Test</h1>
+
+<section class="instructions">
+    <h3>Instructions:</h3>
+    <ul>
+        <li>Read the passage and view the image carefully.</li>
+        <li>Speak clearly and at a natural pace.</li>
+        <li>Address all parts of the questions in your response.</li>
+        <li>You can take a moment to think before you start speaking.</li>
+    </ul>
+</section>
+
+<section class="prompt">
+    <h3>Prompt:</h3>
+    <p>You have just read the following short passage. After reading, please respond to the questions below by speaking for about 2-3 minutes.</p>
+
+    <h3>Passage:</h3> 
+    <p>The importance of environmental conservation cannot be overstated. With the increasing effects of climate change, preserving our natural habitats and ecosystems has become more critical than ever. This includes protecting endangered species, reducing pollution, and promoting sustainable practices. Every individual can make a difference by adopting eco-friendly habits such as recycling, using public transportation, and supporting green initiatives.</p>
+</section>
+
+
+<section class="questions">
+    <h3>Questions:</h3>
+    <div class="question">
+        <p>Summarize the Passage: In your own words, summarize the main ideas of the passage. What are the key points the author is trying to convey?</p>
+        <button class="record-btn" data-question="1">Start Recording</button>
+        <div class="mic-container">
+            <div class="mic"></div>
+        </div>
+        <div class="output" id="output1"></div>
+    </div>
+<section class="image-prompt">
+    <h3>Prompt:</h3>
+    <p>Look at the image below and describe what you see. Provide as much detail as possible and explain what you think is happening in the image.</p>
+    <h3>Image:</h3>
+  <div class="image-container">
+    <img src="{{url_for('static', path ='images/image.jpg')}}" alt="Image description">
+  </div> 
+</section>
+
+    <div class="question"> 
+        <button class="record-btn" data-question="2">Start Recording</button>
+        <div class="mic-container">
+            <div class="mic"></div>
+        </div>
+        <div class="output" id="output2"></div>
+    </div>
+
+</section>
+
+<section class="navigation">
+    <button onclick="window.location.href='/cathoven'">Go to Cathoven</button>
+</section>
+
+<script>
+    const serverUrl = ""; // Ensure serverUrl is rendered as a string
+    const recordBtns = document.querySelectorAll('.record-btn');
+    const mics = document.querySelectorAll('.mic');
+    
+    let mediaRecorder;
+    let audioChunks = [];
+    let isRecording = false;
+    let currentQuestion = null;
+
+    // Event listeners for recording buttons
+    recordBtns.forEach((btn, index) => {
+        btn.addEventListener('click', () => {
+            if (isRecording && currentQuestion === btn.dataset.question) {
+                stopRecording(btn, index);
+            } else {
+                if (isRecording) {
+                    stopRecording();
+                }
+                startRecording(btn, index);
+            }
+        });
+    });
+
+    async function startRecording(btn, index) {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+
+        mediaRecorder.ondataavailable = (event) => {
+            audioChunks.push(event.data);
+        };
+
+        mediaRecorder.onstop = () => {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+            btn.disabled = true;
+            btn.textContent = 'Processing...';
+            mics[index].classList.remove('recording');
+            sendAudioToServer(audioBlob, `output${currentQuestion}`, btn);
+
+            audioChunks = [];
+            isRecording = false;
+            currentQuestion = null;
+        };
+
+        mediaRecorder.start();
+        isRecording = true;
+        currentQuestion = btn.dataset.question;
+        mics[index].classList.add('recording');
+        btn.textContent = 'Stop Recording';
+    }
+
+    function stopRecording() {
+        if (mediaRecorder && mediaRecorder.state === "recording") {
+            mediaRecorder.stop();
+        }
+    }
+
+    function sendAudioToServer(audioBlob, outputId, btn) {
+        const formData = new FormData();
+        formData.append('file', audioBlob, 'recording.wav');
+
+        fetch(`${serverUrl}/upload`, {
+            method: 'POST',
+            body: formData
+        })
+        .then((response) => response.json())  
+        .then((data) => {
+            document.getElementById(outputId).innerHTML = `
+                <h2>Results:</h2>
+                <p><strong>Transcription:</strong> ${data.transcription}</p>
+                <p><strong>Correction:</strong> ${data.correction}</p>
+                <p><strong>Score:</strong> ${data.score_percentage}</p>
+                <p><strong>Keyword Score:</strong> ${data.keyword_score}</p>
+                <p><strong>Semantic Score:</strong> ${data.semantic_score}</p>
+                <p><strong>Final Score:</strong> ${data.final_score}</p>
+            `;
+            btn.disabled = false;
+            btn.textContent = 'Start Recording';
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error uploading audio');
+            btn.disabled = false;
+            btn.textContent = 'Start Recording';
+        });
+    }
+</script>
+{% endblock %}
+
+

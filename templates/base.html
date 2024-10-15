@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}English Proficiency Test{% endblock %}</title>
+    <link rel="stylesheet" href="{{url_for('static', path ='css/style.css')}}">
+    <link rel="toeic_writing" href="{{url_for('static', path ='css/toeic_writing.css')}}">
+</head>
+<body>
+    <header>
+        <nav>
+            <ul class="nav-links">
+                <li><a href="">TOEIC</a></li>
+                <li><a href="">TOEFL</a></li>
+                <li><a href="">JAMB</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+
+    <section class="partners">
+        <h1>Our Partners</h1>
+        <div class="logos">
+            <div class="learnhall-logo">
+                <img src="/static/images/lhlogo.jpg" alt="LearnHall Logo">
+            </div>
+            <div class="launchenglish-logo">
+                <img src="/static/images/lelogo.jpg" alt="Launch English Logo">
+            </div> 
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2024 English Proficiency Test</p>
+    </footer>
+</body>
+</html>
+
